@@ -117,4 +117,25 @@ Procedure Test_Hash_MD5
 		,m.lcHash ;
 	)
 
+*========================================================================================
+Procedure Test_HMAC_SHA256
+    Local loRef, lcHash
+    loRef = NewObject ("foxCryptoNG", "foxCryptoNG.prg")
+    lcHash = loRef.HashData ( "SHA256", "FoxPro rocks!", "Very secret key")
+    This.AssertEquals ( ;
+         "451DBF9AA457C2B3B51C0594588BE6FE09973C4A97B4E72395A6846219CD8873" ;
+        ,m.lcHash ;
+    )
+
+
+*========================================================================================
+Procedure Test_HMAC_SHA512
+    Local loRef, lcHash
+    loRef = NewObject ("foxCryptoNG", "foxCryptoNG.prg")
+    lcHash = loRef.HashData ( "SHA512", "FoxPro rocks!", "Very secret key")
+    This.AssertEquals ( ;
+         "1691840B55E6A273996B5E1DA77AEA64C745AAEBE06AB68BE6EBF2A63FFC62D650150B3B2741DDC7B82643A675AAABD4A3FE72C49C6C93B4438FC9766A8C0D9C" ;
+        ,m.lcHash ;
+    )
+
 EndDefine

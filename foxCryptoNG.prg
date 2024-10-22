@@ -31,6 +31,7 @@ Define Class foxCryptoNG as Custom
 	#define BCRYPT_PAD_OAEP             0x00000004
 	#define BCRYPT_PAD_PSS              0x00000008
 	#define BCRYPT_PAD_PKCS1_OPTIONAL_HASH_OID  0x00000010
+	#define BCRYPT_ALG_HANDLE_HMAC_FLAG 0x00000008
 	
 
 *========================================================================================
@@ -87,7 +88,10 @@ Return m.lcHash
 *========================================================================================
 * Generic routine for hashing binary data.
 *========================================================================================
-Procedure HashData (tcAlgorithm, tcData)
+Procedure HashData (tcAlgorithm, tcData, tcSecretKey)
+	* tcAlgorithm: MD5, SHA1, SHA256, SHA512
+	* tcData: arbitrary data
+	* tcSecretKey: if key is specified the routine performs HMAC algorithm with hash algorithm specified in tcAlgorithm parameter
 
 	*--------------------------------------------------------------------------------------
 	* Stop when we encounter a failure
@@ -102,7 +106,10 @@ Procedure HashData (tcAlgorithm, tcData)
 	lnAlg = 0
 	If m.llOK
 		llOK = BCryptOpenAlgorithmProvider( ;
-			@lnAlg, Strconv(m.tcAlgorithm+Chr(0),5), NULL, 0 ) == 0
+			@lnAlg, ;
+			Strconv(m.tcAlgorithm+Chr(0),5), ;
+			NULL, ;
+			Iif(Vartype(m.tcSecretKey)="C" AND Len(m.tcSecretKey) > 0, BCRYPT_ALG_HANDLE_HMAC_FLAG, 0) ) == 0
 	EndIf
 
 	*--------------------------------------------------------------------------------------
@@ -143,8 +150,14 @@ Procedure HashData (tcAlgorithm, tcData)
 	Local lnHash
 	lnHash = 0
 	If m.llOK
-		llOK = BCryptCreateHash( m.lnAlg, @lnHash, ;
-			lnHashObj, m.lnSizeObj, NULL, 0, 0 ) == 0
+		llOK = BCryptCreateHash( ;
+			m.lnAlg, ;
+			@lnHash, ;
+			lnHashObj, ;
+			m.lnSizeObj, ;
+			Iif(Vartype(m.tcSecretKey)="C" AND Len(m.tcSecretKey) > 0, m.tcSecretKey, NULL), ;
+			Iif(Vartype(m.tcSecretKey)="C" AND Len(m.tcSecretKey) > 0, Len(m.tcSecretKey), 0), ;
+			0 ) == 0
 	EndIf
 	
 	*--------------------------------------------------------------------------------------
@@ -232,7 +245,7 @@ Procedure DeclareApiFunctions
 	Declare Long BCryptGetProperty in BCrypt.DLL ;
 		Long hObject, ;
 		String pszProperty, ;
-    Long @pbOutput, ;
+	Long @pbOutput, ;
 		Long cbOutput, ;
  		Long @pcbResult, ;
  		Long dwFlags
@@ -511,7 +524,7 @@ Procedure Encrypt_RSA (tcData, tcPublicKey)
 	EndIf 
 	
 	*--------------------------------------------------------------------------------------
-	* RSA is a fixed length algorithm. Plain text´and cipher text have fixed length. We
+	* RSA is a fixed length algorithm. Plain textï¿½and cipher text have fixed length. We
 	* use PKCS1 padding to pad shorter blocks. Determine the size of ciphertext.
 	*--------------------------------------------------------------------------------------
 	Local lnSize
@@ -580,7 +593,7 @@ Procedure Decrypt_RSA (tcData, tcPrivateKey)
 	EndIf 
 	
 	*--------------------------------------------------------------------------------------
-	* RSA is a fixed length algorithm. Plain text´and cipher text have fixed length. We
+	* RSA is a fixed length algorithm. Plain textï¿½and cipher text have fixed length. We
 	* use PKCS1 padding to pad shorter blocks. Determine the size of ciphertext.
 	*--------------------------------------------------------------------------------------
 	Local lnSize
